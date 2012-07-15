@@ -73,9 +73,12 @@ def putTimeRecords(records):
             raise IOError("Authentication refused")
         # response is a str() of a list, convert back into a real list
         resp = response.read().decode('utf-8').strip()
-        if resp == "[]": # handle empty list as the below doesn't
-            return []
-        return set(int(x) for x in resp.strip("[]").split(','))
+        ok, sep, errs = resp.partition('\n')
+        if errs:
+            print(errs)
+        if ok == "[]": # handle empty list as the below doesn't
+            return set()
+        return set(int(x) for x in ok.strip("[]").split(','))
 
 if __name__ == "__main__":
     import getpass
