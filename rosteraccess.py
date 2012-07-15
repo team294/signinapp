@@ -58,7 +58,7 @@ def putTimeRecords(records):
     writer.writerow(['person', 'event', 'clock_in', 'clock_out', 'hours',
             'recorded'])
     for record in records:
-        writer.writerow([record.person, "", record.inTime, record.outTime,
+        writer.writerow([record.person.id, "", record.inTime, record.outTime,
                 record.hours, record.recorded])
 
     # send it
@@ -86,4 +86,4 @@ if __name__ == "__main__":
 
     rec = TimeRecord(people[0])
     rec.clear()
-    print("should be [0] ==> %s" % putTimeRecords([rec]))
+    print("should be {0} ==> %s" % putTimeRecords([rec]))
