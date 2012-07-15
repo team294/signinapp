@@ -113,12 +113,12 @@ if __name__ == "__main__":
     settings.LOGIN_PASSWORD = getpass.getpass("Password: ")
     store = DataStore()
     store.sync()
-    person = list(store.people.keys())[0]
-    print("person %d" % person)
-    store.signInOut(person) # sign in
-    store.signInOut(person) # sign out
-    store.signInOut(person) # sign in
-    store.signOutAll()      # sign out
-    store.signInOut(person) # sign in
-    store.clearAll()        # clear
+    #person = list(store.people.keys())[0]
+    #print("person %d" % person)
+    #store.signInOut(person) # sign in
+    #store.signInOut(person) # sign out
+    #store.signInOut(person) # sign in
+    #store.signOutAll()      # sign out
+    #store.signInOut(person) # sign in
+    #store.clearAll()        # clear
     store.save()
