@@ -135,9 +135,13 @@ class MainWindow(QMainWindow):
                 tip="Set server password")
         self.serverPasswordAction.triggered.connect(self.setServerPassword)
 
-        self.serverSyncAction = self.createAction("&Synchronize",
+        self.serverSyncAction = self.createAction("&Synchronize Now",
                 tip="Synchronize with server")
         self.serverSyncAction.triggered.connect(self.sync)
+
+        self.autoSyncAction = self.createAction("&Auto Sync",
+                tip="Enable auto-synchronization with server", checkable=True)
+        self.autoSyncAction.toggled.connect(self.autoSyncToggled)
 
         # Create menu bar
         userMenu = self.menuBar().addMenu("&Users")
@@ -147,6 +151,7 @@ class MainWindow(QMainWindow):
         serverMenu = self.menuBar().addMenu("&Server")
         serverMenu.addAction(self.serverPasswordAction)
         serverMenu.addAction(self.serverSyncAction)
+        serverMenu.addAction(self.autoSyncAction)
 
         # Status bar
         status = self.statusBar()
@@ -164,12 +169,19 @@ class MainWindow(QMainWindow):
         # Load file
         QTimer.singleShot(0, self.datastore.load)
 
+        # Try to autosync once a day
+        self.autoSyncTimer = QTimer(self)
+        self.autoSyncTimer.setInterval(24*60*60*1000)
+        self.autoSyncTimer.timeout.connect(self.sync)
+        self.autoSyncAction.setChecked(True)
+
         for widget in self.studentpics:
             widget.clicked.connect(self.pic_clicked)
         for widget in self.adultpics:
             widget.clicked.connect(self.pic_clicked)
 
-    def createAction(self, text, shortcut=None, icon=None, tip=None):
+    def createAction(self, text, shortcut=None, icon=None, tip=None,
+            checkable=False):
         action = QAction(text, self)
         if icon is not None:
             action.setIcon(QIcon(":/%s.png" % icon))
@@ -178,6 +190,8 @@ class MainWindow(QMainWindow):
         if tip is not None:
             action.setToolTip(tip)
             action.setStatusTip(tip)
+        if checkable:
+            action.setCheckable(True)
         return action
 
     def idEntered(self):
@@ -200,6 +214,8 @@ class MainWindow(QMainWindow):
             self.serverSyncAction.setEnabled(True)
 
     def sync(self):
+        if self.syncThread.isRunning():
+            return
         self.statusBar().showMessage("Synchronizing...")
         self.serverPasswordAction.setEnabled(False)
         self.serverSyncAction.setEnabled(False)
@@ -208,6 +224,12 @@ class MainWindow(QMainWindow):
     def syncDone(self):
         self.serverPasswordAction.setEnabled(True)
         self.serverSyncAction.setEnabled(True)
+
+    def autoSyncToggled(self):
+        if self.autoSyncAction.isChecked():
+            self.autoSyncTimer.start()
+        else:
+            self.autoSyncTimer.stop()
 
     def statsChanged(self):
         self.numPeopleLabel.setText("%d total" % self.datastore.getNumPeople())
