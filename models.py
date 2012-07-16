@@ -88,7 +88,7 @@ class TimeRecord(SuperQObject):
         if self.recorded is not None:
             print("already recorded")
             return
-        self.outTime = datetime.now()
+        self.outTime = self.inTime
         self.hours = 0.0
         self.recorded = datetime.now()
         self.completed.emit()
