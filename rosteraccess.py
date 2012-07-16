@@ -34,13 +34,15 @@ def fetchWithLogin(loc):
 
 def getPersonList():
     data = fetchWithLogin(settings.SIGNIN_PERSON_LIST_LOCATION).decode('utf-8')
+    people = []
     for row in csv.DictReader(io.StringIO(data, newline="")):
         id = int(row["id"])
         name = row["name"]
         student = (row["student"] == "TRUE")
         photoPath = row["photo"]
         photoSize = int(row["photo size"])
-        yield Person(id, name, student, photoPath, photoSize)
+        people.append(Person(id, name, student, photoPath, photoSize))
+    return people
 
 def getBadgePhoto(photoPath, localName):
     print("downloading %s" % photoPath)

@@ -128,7 +128,7 @@ class DataStore(QObject):
                     size = os.stat(person.photo).st_size
                 except OSError:
                     pass
-            if size != person.photoSize:
+            if person.photoRemote and size != person.photoSize:
                 self.statusUpdate.emit("Downloading %s" % person.photoRemote)
                 try:
                     rosteraccess.getBadgePhoto(person.photoRemote, person.photo)
