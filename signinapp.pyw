@@ -131,14 +131,13 @@ class MainWindow(QMainWindow):
                 tip="Clear all users (no hours credit given)")
         usersClearAllAction.triggered.connect(self.clearAll)
 
-        serverPasswordAction = self.createAction("Set &Password",
+        self.serverPasswordAction = self.createAction("Set &Password",
                 tip="Set server password")
-        serverPasswordAction.triggered.connect(self.setServerPassword)
+        self.serverPasswordAction.triggered.connect(self.setServerPassword)
 
         self.serverSyncAction = self.createAction("&Synchronize",
                 tip="Synchronize with server")
         self.serverSyncAction.triggered.connect(self.sync)
-        self.serverSyncAction.setEnabled(False)
 
         # Create menu bar
         userMenu = self.menuBar().addMenu("&Users")
@@ -146,11 +145,18 @@ class MainWindow(QMainWindow):
         userMenu.addAction(usersClearAllAction)
 
         serverMenu = self.menuBar().addMenu("&Server")
-        serverMenu.addAction(serverPasswordAction)
+        serverMenu.addAction(self.serverPasswordAction)
         serverMenu.addAction(self.serverSyncAction)
 
         # Status bar
         status = self.statusBar()
+        self.numPeopleLabel = QLabel("0 total")
+        status.addPermanentWidget(self.numPeopleLabel)
+        self.numClockedInLabel = QLabel("0 in")
+        status.addPermanentWidget(self.numClockedInLabel)
+        self.numTimeEntriesLabel = QLabel("0 records")
+        status.addPermanentWidget(self.numTimeEntriesLabel)
+        self.datastore.statsChanged.connect(self.statsChanged)
 
         self.setWindowTitle("Sign In Application")
         self.idedit.setFocus()
@@ -190,18 +196,23 @@ class MainWindow(QMainWindow):
     def setServerPassword(self):
         form = PasswordDlg(self)
         if form.exec_():
-            oldpass = settings.LOGIN_PASSWORD
             settings.LOGIN_PASSWORD = form.result()
-            if not oldpass:
-                self.serverSyncAction.setEnabled(True)
+            self.serverSyncAction.setEnabled(True)
 
     def sync(self):
         self.statusBar().showMessage("Synchronizing...")
+        self.serverPasswordAction.setEnabled(False)
         self.serverSyncAction.setEnabled(False)
         self.syncThread.start()
 
     def syncDone(self):
+        self.serverPasswordAction.setEnabled(True)
         self.serverSyncAction.setEnabled(True)
+
+    def statsChanged(self):
+        self.numPeopleLabel.setText("%d total" % self.datastore.getNumPeople())
+        self.numClockedInLabel.setText("%d in" % self.datastore.getNumClockedIn())
+        self.numTimeEntriesLabel.setText("%d records" % self.datastore.getNumTimeEntries())
 
     def pic_clicked(self):
         self.signout(self.sender().id)
