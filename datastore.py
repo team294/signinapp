@@ -7,6 +7,7 @@ from models import *
 
 class DataStore(QObject):
     statusUpdate = pyqtSignal(str)
+    statsChanged = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -34,6 +35,7 @@ class DataStore(QObject):
                 self.people = {}
                 self.timeLog = []
                 self.clockedIn = {}
+            self.statsChanged.emit()
 
     def save(self):
         with QMutexLocker(self.mutex):
@@ -43,6 +45,18 @@ class DataStore(QObject):
                 pickler.dump(self.clockedIn)
                 pickler.dump(self.timeLog)
 
+    def getNumPeople(self):
+        with QMutexLocker(self.mutex):
+            return len(self.people)
+
+    def getNumTimeEntries(self):
+        with QMutexLocker(self.mutex):
+            return len(self.timeLog)
+
+    def getNumClockedIn(self):
+        with QMutexLocker(self.mutex):
+            return len(self.clockedIn)
+
     def handle_signout(self):
         record = self.sender()
         print("handling %d signing out" % record.id)
@@ -50,6 +64,7 @@ class DataStore(QObject):
             record = self.clockedIn.pop(record.id, None)
             if record is not None:
                 self.timeLog.append(record)
+            self.statsChanged.emit()
 
     def signInOut(self, id):
         """Sign person in or out (based on their current state).
@@ -61,12 +76,14 @@ class DataStore(QObject):
                 # signing out
                 record.signOut()
                 self.timeLog.append(record)
+                self.statsChanged.emit()
                 return False
             else:
                 # signing in
                 record = TimeRecord(person)
                 record.completed.connect(self.handle_signout)
                 self.clockedIn[id] = record
+                self.statsChanged.emit()
                 return True
 
     def clearAll(self):
@@ -77,6 +94,7 @@ class DataStore(QObject):
                 record = self.clockedIn.popitem()[1]
                 record.clear()
                 self.timeLog.append(record)
+            self.statsChanged.emit()
 
     def signOutAll(self):
         """Sign out all clocked in entries."""
@@ -85,6 +103,7 @@ class DataStore(QObject):
                 record = self.clockedIn.popitem()[1]
                 record.signOut()
                 self.timeLog.append(record)
+            self.statsChanged.emit()
 
     def sync(self):
         # Update people from roster
@@ -125,10 +144,13 @@ class DataStore(QObject):
                             len(self.timeLog))
                     ok = rosteraccess.putTimeRecords(self.timeLog)
                 except IOError as e:
+                    self.statsChanged.emit()
                     self.statusUpdate.emit("Failed to push time entries: %s" % e)
                     return
                 self.timeLog = [v for i, v in enumerate(self.timeLog) if i not in ok]
             self.statusUpdate.emit("Pushed %d time records" % len(self.timeLog))
+
+            self.statsChanged.emit()
 
 if __name__ == "__main__":
     import getpass
