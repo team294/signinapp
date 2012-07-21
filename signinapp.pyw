@@ -3,6 +3,7 @@ from PyQt4.QtGui import *
 import datastore
 import settings
 from passworddlg import PasswordDlg
+from finddlg import FindDlg
 
 class SynchronizeThread(QThread):
     finished = pyqtSignal()
@@ -150,6 +151,9 @@ class MainWindow(QMainWindow):
         center.setLayout(layout)
 
         # Create actions
+        usersFindAction = self.createAction("&Find...", tip="Find id for user")
+        usersFindAction.triggered.connect(self.findUser)
+
         usersSignOutAllAction = self.createAction("Sign &Out All",
                 tip="Sign out all users")
         usersSignOutAllAction.triggered.connect(self.signOutAll)
@@ -172,6 +176,8 @@ class MainWindow(QMainWindow):
 
         # Create menu bar
         userMenu = self.menuBar().addMenu("&Users")
+        userMenu.addAction(usersFindAction)
+        userMenu.addSeparator()
         userMenu.addAction(usersSignOutAllAction)
         userMenu.addAction(usersClearAllAction)
 
@@ -276,6 +282,10 @@ class MainWindow(QMainWindow):
 
         # update widget
         self.ids[person.id] = widget
+
+    def findUser(self):
+        form = FindDlg(self.datastore, parent=self)
+        form.exec_()
 
     def signOutAll(self):
         reply = QMessageBox.warning(self, "Confirm sign out",
