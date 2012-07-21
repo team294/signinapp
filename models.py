@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 from PyQt4.QtCore import QObject, pyqtSignal
 
 class SuperQObject(QObject):
@@ -52,6 +53,15 @@ class Person(SuperQObject):
         self.photoSize = other.photoSize
         if changed:
             self.updated.emit()
+
+    def hasPhoto(self):
+        if self.photoSize == 0:
+            return False
+        try:
+            size = os.stat(self.photo).st_size
+        except OSError:
+            return False
+        return size == self.photoSize
 
     def __repr__(self):
         return 'Person(%s, %s, %s, %s, %s)' % \
