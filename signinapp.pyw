@@ -15,42 +15,78 @@ class SynchronizeThread(QThread):
         self.datastore.sync()
         self.finished.emit()
 
-class ImageButton(QAbstractButton):
+class PersonImage(QAbstractButton):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._pixmap = None
-        self.id = None
-
-    @property
-    def pixmap(self):
-        return self._pixmap
-
-    @pixmap.setter
-    def pixmap(self, value):
-        self._pixmap = value
-        self.update()
+        self.image = None
+        self.pixmap = None
+        self.record = None
+        self.label = QLabel(self)
+        self.label.setAlignment(Qt.AlignCenter)
+        self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.labelHeight = self.label.minimumSizeHint().height() * 1.25
 
     def minimumSizeHint(self):
         return QSize(60, 100)
 
-    def sizeHint(self):
-        return QSize(60, 100)
+    def updatePixmap(self):
+        if self.image is not None:
+            width = self.size().width()
+            height = self.size().height() - self.labelHeight
+            self.pixmap = QPixmap.fromImage(self.image.scaled(width, height,
+                    Qt.KeepAspectRatioByExpanding,
+                    Qt.SmoothTransformation))
+
+    def resizeEvent(self, event=None):
+        self.updatePixmap()
+        self.label.move(0, self.size().height()-self.labelHeight)
+        self.label.resize(self.size().width(), self.labelHeight)
 
     def paintEvent(self, event=None):
         p = QPainter(self)
-        if self._pixmap is not None:
-            p.drawPixmap(0, 0, self._pixmap)
-            return
         p.save()
         p.fillRect(p.viewport(), Qt.white)
         p.setPen(Qt.black)
         p.drawRect(p.viewport().adjusted(0, 0, -1, -1))
         p.restore()
 
-    def clear(self):
-        self._pixmap = None
-        self.id = None
+        if self.pixmap is not None:
+            width = p.viewport().width()
+            height = p.viewport().height() - self.labelHeight
+            p.drawPixmap(0, 0, self.pixmap,
+                    abs(width - self.pixmap.width()) / 2,
+                    abs(height - self.pixmap.height()) / 2,
+                    width, height)
+
+    def set(self, record):
+        self.record = record
+        image = QImage(record.person.photo)
+        if image.isNull():
+            raise IOError
+        self.image = image
+        self.updatePixmap()
+        self.label.setText(record.person.name.partition(' ')[0])
         self.update()
+
+    def clear(self):
+        self.record = None
+        self.image = None
+        self.pixmap = None
+        self.label.clear()
+        self.update()
+
+class PersonLabel(QLabel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.record = None
+
+    def set(self, record):
+        self.record = record
+        self.setText(str(record.person))
+
+    def clear(self):
+        super().clear()
+        self.record = None
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -67,69 +103,60 @@ class MainWindow(QMainWindow):
         # Center widget
         center = QWidget()
         self.setCentralWidget(center)
+        layout = QGridLayout()
+        layout.setSpacing(4)
 
-        self.studentpics = [ImageButton() for i in range(7*4)]
-        self.adultpics = [ImageButton() for i in range(3*4)]
-        self.overflow = [QLabel() for i in range(20)]
+        self.studentpics = [PersonImage() for i in range(7*4)]
+        self.adultpics = [PersonImage() for i in range(3*4)]
+        self.overflow = [PersonLabel() for i in range(20)]
 
-        # Student photos (grid)
-        studentgrid = QGridLayout()
-        studentgrid.setSpacing(4)
-        studentgrid.setRowStretch(5, 1) # empty row to handle stretching
-
+        # Photos
         studentlabel = QLabel("Students")
-        studentlabel.setAlignment(Qt.AlignHCenter|Qt.AlignVCenter)
+        studentlabel.setAlignment(Qt.AlignCenter)
         studentlabel.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
         studentlabel.setObjectName("student")
-        studentgrid.addWidget(studentlabel, 0, 0, 1, -1)
+        layout.addWidget(studentlabel, 0, 0, 1, 7)
+
+        adultlabel = QLabel("Mentors & Parents")
+        adultlabel.setAlignment(Qt.AlignCenter)
+        adultlabel.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+        adultlabel.setObjectName("adult")
+        layout.addWidget(adultlabel, 0, 8, 1, 3)
 
         for row in range(4):
             for col in range(7):
-                studentgrid.addWidget(self.studentpics[row*7+col], row+1, col)
-
-        # Adult photos (grid)
-        adultgrid = QGridLayout()
-        adultgrid.setSpacing(4)
-        adultgrid.setRowStretch(5, 1) # empty row to handle stretching
-
-        adultlabel = QLabel("Mentors & Parents")
-        adultlabel.setAlignment(Qt.AlignHCenter|Qt.AlignVCenter)
-        adultlabel.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
-        adultlabel.setObjectName("adult")
-        adultgrid.addWidget(adultlabel, 0, 0, 1, -1)
-
-        for row in range(4):
+                layout.addWidget(self.studentpics[row*7+col], row+1, col)
+                layout.setColumnStretch(col, 1)
             for col in range(3):
-                adultgrid.addWidget(self.adultpics[row*3+col], row+1, col)
+                layout.addWidget(self.adultpics[row*3+col], row+1, col+8)
+                layout.setColumnStretch(col+8, 1)
+            layout.setRowStretch(row+1, 1)
 
         # Overflow (including entry text box)
         self.idedit = QLineEdit()
         self.idedit.setValidator(QIntValidator())
         self.idedit.returnPressed.connect(self.idEntered)
+        layout.addWidget(self.idedit, 0, 7)
 
+        overflowwidget = QWidget()
         overflowlayout = QVBoxLayout()
-        overflowlayout.addWidget(self.idedit)
         for widget in self.overflow:
             overflowlayout.addWidget(widget)
         overflowlayout.addStretch(1)
-        overflowlayout.addStrut(60)
-
-        # Overall layout
-        layout = QHBoxLayout()
-        layout.addLayout(studentgrid)
-        layout.addLayout(overflowlayout)
-        layout.addLayout(adultgrid)
+        overflowlayout.addStrut(120)
+        overflowwidget.setLayout(overflowlayout)
+        layout.addWidget(overflowwidget, 1, 7, -1, 1)
 
         center.setLayout(layout)
 
         # Create actions
         usersSignOutAllAction = self.createAction("Sign &Out All",
                 tip="Sign out all users")
-        usersSignOutAllAction.triggered.connect(self.signOutAll)
+        usersSignOutAllAction.triggered.connect(self.datastore.signOutAll)
 
         usersClearAllAction = self.createAction("&Clear All",
                 tip="Clear all users (no hours credit given)")
-        usersClearAllAction.triggered.connect(self.clearAll)
+        usersClearAllAction.triggered.connect(self.datastore.clearAll)
 
         self.serverPasswordAction = self.createAction("Set &Password",
                 tip="Set server password")
@@ -167,7 +194,7 @@ class MainWindow(QMainWindow):
         self.idedit.setFocus()
 
         # Load file
-        QTimer.singleShot(0, self.datastore.load)
+        QTimer.singleShot(0, self.load)
 
         # Try to autosync once a day
         self.autoSyncTimer = QTimer(self)
@@ -194,18 +221,61 @@ class MainWindow(QMainWindow):
             action.setCheckable(True)
         return action
 
+    def load(self):
+        self.datastore.load()
+        for record in self.datastore.clockedIn.values():
+            self.signin(record)
+
     def idEntered(self):
         id = int(self.idedit.text())
         self.idedit.clear()
+        try:
+            record = self.datastore.signInOut(id)
+        except KeyError:
+            self.statusBar().showMessage("User %d does not exist" % id)
 
-    def signOutAll(self):
-        self.datastore.signOutAll()
+        self.statusBar().showMessage("%s signed %s" %
+                (repr(self.datastore.people[id]),
+                 "out" if record is None else "in"))
 
-    def clearAll(self):
-        self.datastore.clearAll()
-        for widget in self.ids:
-            widget.clear()
-        self.ids.clear()
+        if record is not None:
+            self.signin(record)
+
+    def signin(self, record):
+        # get notified when person signs out
+        record.completed.connect(self.handle_signout)
+
+        # figure out which widget to place person at..
+        widget = None
+
+        # if picture available, try to place in pics
+        person = record.person
+        if person.hasPhoto():
+            if person.student:
+                picwidgets = self.studentpics
+            else:
+                picwidgets = self.adultpics
+            for w in picwidgets:
+                if w.record is None:
+                    widget = w
+                    break
+            if widget is not None:
+                try:
+                    widget.set(record)
+                except IOError:
+                    widget = None # file didn't load, place in overflow
+
+        # otherwise place in overflow
+        if widget is None:
+            for w in self.overflow:
+                if w.record is None:
+                    widget = w
+                    break
+            if widget is not None:
+                widget.set(record)
+
+        # update widget
+        self.ids[person.id] = widget
 
     def setServerPassword(self):
         form = PasswordDlg(self)
@@ -224,6 +294,12 @@ class MainWindow(QMainWindow):
     def syncDone(self):
         self.serverPasswordAction.setEnabled(True)
         self.serverSyncAction.setEnabled(True)
+        # update all widgets
+        for id in self.ids:
+            self.ids[id].clear()
+        self.ids.clear()
+        for record in self.datastore.clockedIn.values():
+            self.signin(record)
 
     def autoSyncToggled(self):
         if self.autoSyncAction.isChecked():
@@ -237,12 +313,16 @@ class MainWindow(QMainWindow):
         self.numTimeEntriesLabel.setText("%d records" % self.datastore.getNumTimeEntries())
 
     def pic_clicked(self):
-        self.signout(self.sender().id)
+        record = self.sender().record
+        if record is not None:
+            self.statusBar().showMessage("%s signed out" % record.person)
+            record.signOut()
         self.idedit.setFocus()
 
-    def signout(self, id):
+    def handle_signout(self):
+        id = self.sender().person.id
         if id not in self.ids:
-            return
+            return # shouldn't happen, but just in case..
         self.ids[id].clear()
         del self.ids[id]
 
