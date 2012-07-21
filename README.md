@@ -5,9 +5,9 @@ A sign in application designed to interface to the Roster project.
 
 Requirements
 ------------
-Python 3
-PyQt4
-A server running the Roster django application
+- Python 3
+- PyQt4
+- A server running the Roster django application
 
 Configuration
 -------------
