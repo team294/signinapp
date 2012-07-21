@@ -152,13 +152,13 @@ class MainWindow(QMainWindow):
         # Create actions
         usersSignOutAllAction = self.createAction("Sign &Out All",
                 tip="Sign out all users")
-        usersSignOutAllAction.triggered.connect(self.datastore.signOutAll)
+        usersSignOutAllAction.triggered.connect(self.signOutAll)
 
         usersClearAllAction = self.createAction("&Clear All",
                 tip="Clear all users (no hours credit given)")
-        usersClearAllAction.triggered.connect(self.datastore.clearAll)
+        usersClearAllAction.triggered.connect(self.clearAll)
 
-        self.serverPasswordAction = self.createAction("Set &Password",
+        self.serverPasswordAction = self.createAction("Set &Password...",
                 tip="Set server password")
         self.serverPasswordAction.triggered.connect(self.setServerPassword)
 
@@ -276,6 +276,21 @@ class MainWindow(QMainWindow):
 
         # update widget
         self.ids[person.id] = widget
+
+    def signOutAll(self):
+        reply = QMessageBox.warning(self, "Confirm sign out",
+                "Are you sure you want to sign out ALL users?",
+                QMessageBox.Yes|QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.datastore.signOutAll()
+
+    def clearAll(self):
+        reply = QMessageBox.warning(self, "Confirm clear",
+                "Are you sure you want to clear ALL users?\n"
+                "They will not get any hours credit!",
+                QMessageBox.Yes|QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.datastore.clearAll()
 
     def setServerPassword(self):
         form = PasswordDlg(self)
