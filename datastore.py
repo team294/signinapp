@@ -26,7 +26,7 @@ class DataStore(QObject):
                     self.clockedIn = unpickler.load()
                     self.timeLog = unpickler.load()
                 self.statusUpdate.emit(
-                        "Loaded %d people (%d clocked in) and %d time entries." %
+                        "Loaded %d people (%d clocked in) and %d time records." %
                         (len(self.people), len(self.clockedIn),
                          len(self.timeLog)))
                 for record in self.clockedIn.values():
@@ -59,16 +59,18 @@ class DataStore(QObject):
 
     def handle_signout(self):
         record = self.sender()
-        print("handling %d signing out" % record.id)
+        id = record.person.id
+        print("handling %d signing out" % id)
         with QMutexLocker(self.mutex):
-            record = self.clockedIn.pop(record.id, None)
+            record = self.clockedIn.pop(id, None)
             if record is not None:
                 self.timeLog.append(record)
             self.statsChanged.emit()
 
     def signInOut(self, id):
         """Sign person in or out (based on their current state).
-        Returns False if person was previously signed in."""
+        Returns None if person was previously signed in,
+        otherwise returns created TimeRecord."""
         with QMutexLocker(self.mutex):
             person = self.people[id]
             record = self.clockedIn.pop(id, None)
@@ -77,17 +79,17 @@ class DataStore(QObject):
                 record.signOut()
                 self.timeLog.append(record)
                 self.statsChanged.emit()
-                return False
+                return None
             else:
                 # signing in
                 record = TimeRecord(person)
                 record.completed.connect(self.handle_signout)
                 self.clockedIn[id] = record
                 self.statsChanged.emit()
-                return True
+                return record
 
     def clearAll(self):
-        """Clear all clocked in entries.  They will be saved in the time log
+        """Clear all clocked in records.  They will be saved in the time log
         but with no hours credit."""
         with QMutexLocker(self.mutex):
             while self.clockedIn:
@@ -97,7 +99,7 @@ class DataStore(QObject):
             self.statsChanged.emit()
 
     def signOutAll(self):
-        """Sign out all clocked in entries."""
+        """Sign out all clocked in records."""
         with QMutexLocker(self.mutex):
             while self.clockedIn:
                 record = self.clockedIn.popitem()[1]
@@ -140,12 +142,12 @@ class DataStore(QObject):
         with QMutexLocker(self.mutex):
             if self.timeLog:
                 try:
-                    self.statusUpdate.emit("Pushing %d time entries" %
+                    self.statusUpdate.emit("Pushing %d time records" %
                             len(self.timeLog))
                     ok = rosteraccess.putTimeRecords(self.timeLog)
                 except IOError as e:
                     self.statsChanged.emit()
-                    self.statusUpdate.emit("Failed to push time entries: %s" % e)
+                    self.statusUpdate.emit("Failed to push time records: %s" % e)
                     return
                 self.timeLog = [v for i, v in enumerate(self.timeLog) if i not in ok]
             self.statusUpdate.emit("Pushed %d time records" % len(self.timeLog))
