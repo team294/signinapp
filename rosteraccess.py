@@ -38,7 +38,7 @@ def getPersonList():
     for row in csv.DictReader(io.StringIO(data, newline="")):
         id = int(row["id"])
         name = row["name"]
-        student = (row["student"] == "TRUE")
+        student = (row["student"] != "False")
         photoPath = row["photo"]
         photoSize = int(row["photo size"])
         people.append(Person(id, name, student, photoPath, photoSize))
