@@ -16,7 +16,7 @@ class SynchronizeThread(QThread):
         self.datastore.sync()
         self.finished.emit()
 
-class PersonImage(QAbstractButton):
+class PersonImage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.image = None
@@ -66,7 +66,8 @@ class PersonImage(QAbstractButton):
             raise IOError
         self.image = image
         self.updatePixmap()
-        self.label.setText(record.person.name.partition(' ')[0])
+        self.label.setText("%s (%d)" % (
+            record.person.name.partition(' ')[0], record.person.id))
         self.update()
 
     def clear(self):
@@ -208,11 +209,6 @@ class MainWindow(QMainWindow):
         self.autoSyncTimer.timeout.connect(self.sync)
         self.autoSyncAction.setChecked(True)
 
-        for widget in self.studentpics:
-            widget.clicked.connect(self.pic_clicked)
-        for widget in self.adultpics:
-            widget.clicked.connect(self.pic_clicked)
-
     def createAction(self, text, shortcut=None, icon=None, tip=None,
             checkable=False):
         action = QAction(text, self)
@@ -336,13 +332,6 @@ class MainWindow(QMainWindow):
         self.numPeopleLabel.setText("%d total" % self.datastore.getNumPeople())
         self.numClockedInLabel.setText("%d in" % self.datastore.getNumClockedIn())
         self.numTimeEntriesLabel.setText("%d records" % self.datastore.getNumTimeEntries())
-
-    def pic_clicked(self):
-        record = self.sender().record
-        if record is not None:
-            self.statusBar().showMessage("%s signed out" % record.person)
-            record.signOut()
-        self.idedit.setFocus()
 
     def handle_signout(self):
         id = self.sender().person.id
