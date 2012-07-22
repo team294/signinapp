@@ -239,10 +239,10 @@ class MainWindow(QMainWindow):
             record = self.datastore.signInOut(id)
         except KeyError:
             self.statusBar().showMessage("User %d does not exist" % id)
+            return
 
         self.statusBar().showMessage("%s signed %s" %
-                (repr(self.datastore.people[id]),
-                 "out" if record is None else "in"))
+                (self.datastore.people[id], "out" if record is None else "in"))
 
         if record is not None:
             self.signin(record)
@@ -348,7 +348,8 @@ class MainWindow(QMainWindow):
         id = self.sender().person.id
         if id not in self.ids:
             return # shouldn't happen, but just in case..
-        self.ids[id].clear()
+        if self.ids[id] is not None:
+            self.ids[id].clear()
         del self.ids[id]
 
     def closeEvent(self, event):
