@@ -30,7 +30,7 @@ class SuperQObject(QObject):
 class Person(SuperQObject):
     updated = pyqtSignal()
 
-    def __init__(self, id, name, student, photoPath, photoSize):
+    def __init__(self, id, name, student, photoPath, photoSize, badge):
         super().__init__()
         self.id = id
         self.name = name
@@ -38,6 +38,7 @@ class Person(SuperQObject):
         self.photo = "photos/"+photoPath.split('/')[-1]
         self.photoRemote = photoPath
         self.photoSize = photoSize
+        self.badge = badge
 
     def updateFrom(self, other):
         assert(self.id == other.id)
@@ -45,12 +46,14 @@ class Person(SuperQObject):
                 self.student != other.student or
                 self.photo != other.photo or
                 self.photoRemote != other.photoRemote or
-                self.photoSize != other.photoSize)
+                self.photoSize != other.photoSize or
+                self.badge != other.badge)
         self.name = other.name
         self.student = other.student
         self.photo = other.photo
         self.photoRemote = other.photoRemote
         self.photoSize = other.photoSize
+        self.badge = other.badge
         if changed:
             self.updated.emit()
 
@@ -64,12 +67,12 @@ class Person(SuperQObject):
         return size == self.photoSize
 
     def __repr__(self):
-        return 'Person(%s, %s, %s, %s, %s)' % \
+        return 'Person(%s, %s, %s, %s, %s, %s)' % \
                 (repr(self.id), repr(self.name), repr(self.student),
-                 repr(self.photoRemote), repr(self.photoSize))
+                 repr(self.photoRemote), repr(self.photoSize), repr(self.badge))
 
     def __str__(self):
-        return "%s (%d)" % (self.name, self.id)
+        return "%s (%d)" % (self.name, self.badge)
 
 class TimeRecord(SuperQObject):
     completed = pyqtSignal()

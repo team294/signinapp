@@ -41,7 +41,8 @@ def getPersonList():
         student = (row["student"] != "False")
         photoPath = row["photo"]
         photoSize = int(row["photo size"])
-        people.append(Person(id, name, student, photoPath, photoSize))
+        badge = int(row["badge"])
+        people.append(Person(id, name, student, photoPath, photoSize, badge))
     return people
 
 def getBadgePhoto(photoPath, localName):

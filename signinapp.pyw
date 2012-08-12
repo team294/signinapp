@@ -67,7 +67,7 @@ class PersonImage(QWidget):
         self.image = image
         self.updatePixmap()
         self.label.setText("%s (%d)" % (
-            record.person.name.partition(' ')[0], record.person.id))
+            record.person.name.partition(' ')[0], record.person.badge))
         self.update()
 
     def clear(self):
@@ -135,9 +135,9 @@ class MainWindow(QMainWindow):
             layout.setRowStretch(row+1, 1)
 
         # Overflow (including entry text box)
-        self.idedit = QLineEdit()
-        self.idedit.returnPressed.connect(self.idEntered)
-        layout.addWidget(self.idedit, 0, 7)
+        self.badgeEdit = QLineEdit()
+        self.badgeEdit.returnPressed.connect(self.badgeEntered)
+        layout.addWidget(self.badgeEdit, 0, 7)
 
         overflowwidget = QWidget()
         overflowlayout = QVBoxLayout()
@@ -197,7 +197,7 @@ class MainWindow(QMainWindow):
         self.datastore.statsChanged.connect(self.statsChanged)
 
         self.setWindowTitle("Sign In Application")
-        self.idedit.setFocus()
+        self.badgeEdit.setFocus()
 
         # Load file
         QTimer.singleShot(0, self.load)
@@ -227,35 +227,36 @@ class MainWindow(QMainWindow):
         for record in self.datastore.clockedIn.values():
             self.signin(record)
 
-    def idEntered(self):
-        idstr = self.idedit.text()
-        self.idedit.clear()
+    def badgeEntered(self):
+        badgestr = self.badgeEdit.text()
+        self.badgeEdit.clear()
 
-        if idstr[0] == 'B':
+        if badgestr[0] == 'B':
             # Handle as Code39-encoded barcode "BxxxxC" (C=checksum)
             # Check checksum across all characters
             charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%"
-            checksum = charset[sum(charset.index(c) for c in idstr[:-1]) % 43]
-            if checksum != idstr[-1]:
-                self.statusBar().showMessage("Bad barcode checksum for '%s': expected %s" % (idstr, checksum))
+            checksum = charset[sum(charset.index(c) for c in badgestr[:-1]) % 43]
+            if checksum != badgestr[-1]:
+                self.statusBar().showMessage("Bad barcode checksum for '%s': expected %s" % (badgestr, checksum))
                 return
             # Extract internal data (should be number)
-            idstr = idstr[1:-1]
+            badgestr = badgestr[1:-1]
 
         try:
-            id = int(idstr)
+            badge = int(badgestr)
         except ValueError:
-            self.statusBar().showMessage("Invalid data entry '%s'" % idstr)
+            self.statusBar().showMessage("Invalid data entry '%s'" % badgestr)
             return
 
         try:
-            record = self.datastore.signInOut(id)
+            record = self.datastore.signInOut(badge)
         except KeyError:
-            self.statusBar().showMessage("User %d does not exist" % id)
+            self.statusBar().showMessage("User %d does not exist" % badge)
             return
 
         self.statusBar().showMessage("%s signed %s" %
-                (self.datastore.people[id], "out" if record is None else "in"))
+                (self.datastore.people[self.datastore.badgeToId[badge]],
+                "out" if record is None else "in"))
 
         if record is not None:
             self.signin(record)

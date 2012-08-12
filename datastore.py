@@ -15,6 +15,7 @@ class DataStore(QObject):
         self.people = {}
         self.timeLog = []
         self.clockedIn = {}
+        self.badgeToId = {}
 
     def load(self):
         # Load pickles or create fresh if no pickle file
@@ -31,10 +32,13 @@ class DataStore(QObject):
                          len(self.timeLog)))
                 for record in self.clockedIn.values():
                     record.completed.connect(self.handle_signout)
+                for person in self.people.values():
+                    self.badgeToId[person.badge] = person.id
             except (IOError, EOFError):
                 self.people = {}
                 self.timeLog = []
                 self.clockedIn = {}
+                self.badgeToId = {}
             self.statsChanged.emit()
 
     def save(self):
@@ -67,11 +71,12 @@ class DataStore(QObject):
                 self.timeLog.append(record)
             self.statsChanged.emit()
 
-    def signInOut(self, id):
+    def signInOut(self, badge):
         """Sign person in or out (based on their current state).
         Returns None if person was previously signed in,
         otherwise returns created TimeRecord."""
         with QMutexLocker(self.mutex):
+            id = self.badgeToId[badge]
             person = self.people[id]
             record = self.clockedIn.pop(id, None)
             if record is not None:
@@ -112,11 +117,13 @@ class DataStore(QObject):
         try:
             newpeople = rosteraccess.getPersonList()
             with QMutexLocker(self.mutex):
+                self.badgeToId = {}
                 for person in newpeople:
                     if person.id in self.people:
                         self.people[person.id].updateFrom(person)
                     else:
                         self.people[person.id] = person
+                    self.badgeToId[person.badge] = person.id
         except IOError as e:
             # Unlikely we'll be able to do anything else
             self.statusUpdate.emit("Could not contact server to synchronize: %s" % e)

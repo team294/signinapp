@@ -14,7 +14,7 @@ class FindDlg(QDialog):
 
         self.results = QTableWidget()
         self.results.setColumnCount(2)
-        self.results.setHorizontalHeaderLabels(["Name", "Id"])
+        self.results.setHorizontalHeaderLabels(["Name", "Badge"])
 
         findButton = QPushButton("&Find")
         closeButton = QPushButton("&Close")
@@ -49,7 +49,7 @@ class FindDlg(QDialog):
             item.setFlags(Qt.ItemIsSelectable|Qt.ItemIsEnabled)
             self.results.setItem(row, 0, item)
 
-            item = QTableWidgetItem(str(person.id))
+            item = QTableWidgetItem(str(person.badge))
             item.setFlags(Qt.ItemIsSelectable|Qt.ItemIsEnabled)
             self.results.setItem(row, 1, item)
         self.results.sortItems(0)
