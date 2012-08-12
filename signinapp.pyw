@@ -136,7 +136,6 @@ class MainWindow(QMainWindow):
 
         # Overflow (including entry text box)
         self.idedit = QLineEdit()
-        self.idedit.setValidator(QIntValidator())
         self.idedit.returnPressed.connect(self.idEntered)
         layout.addWidget(self.idedit, 0, 7)
 
@@ -229,8 +228,26 @@ class MainWindow(QMainWindow):
             self.signin(record)
 
     def idEntered(self):
-        id = int(self.idedit.text())
+        idstr = self.idedit.text()
         self.idedit.clear()
+
+        if idstr[0] == 'B':
+            # Handle as Code39-encoded barcode "BxxxxC" (C=checksum)
+            # Check checksum across all characters
+            charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%"
+            checksum = charset[sum(charset.index(c) for c in idstr[:-1]) % 43]
+            if checksum != idstr[-1]:
+                self.statusBar().showMessage("Bad barcode checksum for '%s': expected %s" % (idstr, checksum))
+                return
+            # Extract internal data (should be number)
+            idstr = idstr[1:-1]
+
+        try:
+            id = int(idstr)
+        except ValueError:
+            self.statusBar().showMessage("Invalid data entry '%s'" % idstr)
+            return
+
         try:
             record = self.datastore.signInOut(id)
         except KeyError:
