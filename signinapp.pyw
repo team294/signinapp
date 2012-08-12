@@ -177,9 +177,10 @@ class MainWindow(QMainWindow):
         # Create menu bar
         userMenu = self.menuBar().addMenu("&Users")
         userMenu.addAction(usersFindAction)
-        userMenu.addSeparator()
-        userMenu.addAction(usersSignOutAllAction)
-        userMenu.addAction(usersClearAllAction)
+
+        actionMenu = self.menuBar().addMenu("&Actions")
+        actionMenu.addAction(usersSignOutAllAction)
+        actionMenu.addAction(usersClearAllAction)
 
         serverMenu = self.menuBar().addMenu("&Server")
         serverMenu.addAction(self.serverPasswordAction)
