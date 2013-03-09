@@ -83,6 +83,7 @@ class DataStore(QObject):
                 # signing out
                 record.signOut()
                 self.timeLog.append(record)
+                self.save()
                 self.statsChanged.emit()
                 return None
             else:
@@ -90,6 +91,7 @@ class DataStore(QObject):
                 record = TimeRecord(person)
                 record.completed.connect(self.handle_signout)
                 self.clockedIn[id] = record
+                self.save()
                 self.statsChanged.emit()
                 return record
 
@@ -101,6 +103,7 @@ class DataStore(QObject):
                 record = self.clockedIn.popitem()[1]
                 record.clear()
                 self.timeLog.append(record)
+            self.save()
             self.statsChanged.emit()
 
     def signOutAll(self):
@@ -110,6 +113,7 @@ class DataStore(QObject):
                 record = self.clockedIn.popitem()[1]
                 record.signOut()
                 self.timeLog.append(record)
+            self.save()
             self.statsChanged.emit()
 
     def sync(self):

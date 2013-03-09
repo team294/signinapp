@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import datastore
@@ -14,6 +15,7 @@ class SynchronizeThread(QThread):
 
     def run(self):
         self.datastore.sync()
+        self.datastore.save()
         self.finished.emit()
 
 class PersonImage(QWidget):
