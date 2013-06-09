@@ -1,4 +1,4 @@
 
-/photos
+/photos/*.jpeg
 __pycache__
 *.pickle
