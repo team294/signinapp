@@ -161,7 +161,7 @@ class DataStore(QObject):
                     self.statusUpdate.emit("Failed to push time records: %s" % e)
                     return
                 self.timeLog = [v for i, v in enumerate(self.timeLog) if i not in ok]
-            self.statusUpdate.emit("Pushed %d time records" % len(self.timeLog))
+                self.statusUpdate.emit("Pushed %d time records" % len(ok))
 
             self.statsChanged.emit()
 
