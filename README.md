@@ -11,7 +11,7 @@ Requirements
 
 Configuration
 -------------
-Edit settings.py and set the BASE\_URL and LOGIN\_USERNAME appropriately.
+Edit settings.ini and set the BASE\_URL and LOGIN\_USERNAME appropriately.
 Due to security concerns, we recommend NOT setting the LOGIN\_PASSWORD and
 using a dedicated user for LOGIN\_USERNAME.
 The other settings shouldn't need tweaking unless you have a very customized

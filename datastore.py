@@ -10,8 +10,9 @@ class DataStore(QObject):
     statusUpdate = pyqtSignal(str)
     statsChanged = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, backend):
         super(DataStore, self).__init__()
+        self.backend = backend
         self.mutex = QMutex(QMutex.Recursive)
         self.people = {}
         self.timeLog = []
@@ -120,7 +121,7 @@ class DataStore(QObject):
     def sync(self):
         # Update people from backend
         try:
-            newpeople = backend.getPersonList()
+            newpeople = self.backend.getPersonList()
             with QMutexLocker(self.mutex):
                 self.badgeToId = {}
                 for person in newpeople:
@@ -145,7 +146,7 @@ class DataStore(QObject):
             if person.photoRemote and size != person.photoSize:
                 self.statusUpdate.emit("Downloading %s" % person.photoRemote)
                 try:
-                    backend.getBadgePhoto(person.photoRemote, person.photo)
+                    self.backend.getBadgePhoto(person.photoRemote, person.photo)
                 except IOError as e:
                     self.statusUpdate.emit("Failed when downloading %s: %s" %
                             (person.photo, e))
@@ -156,7 +157,7 @@ class DataStore(QObject):
                 try:
                     self.statusUpdate.emit("Pushing %d time records" %
                             len(self.timeLog))
-                    ok = backend.putTimeRecords(self.timeLog)
+                    ok = self.backend.putTimeRecords(self.timeLog)
                 except IOError as e:
                     self.statsChanged.emit()
                     self.statusUpdate.emit("Failed to push time records: %s" % e)
@@ -167,9 +168,18 @@ class DataStore(QObject):
             self.statsChanged.emit()
 
 if __name__ == "__main__":
+    try:
+        from configparser import ConfigParser
+    except ImportError:
+        from ConfigParser import ConfigParser
+    config = ConfigParser()
+    config.read("settings.ini")
     import getpass
-    settings.LOGIN_PASSWORD = getpass.getpass("Password: ")
-    store = DataStore()
+    config.set('roster', 'LOGIN_PASSWORD', getpass.getpass("Password: "))
+
+    from backend_roster import Backend
+    backend = Backend(config)
+    store = DataStore(backend)
     store.statusUpdate.connect(print)
     store.load()
     store.sync()

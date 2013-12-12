@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+try:
+    from configparser import ConfigParser
+except ImportError:
+    from ConfigParser import ConfigParser
 import datastore
-import settings
+import importlib
 from passworddlg import PasswordDlg
 from finddlg import FindDlg
 
@@ -95,7 +99,18 @@ class PersonLabel(QLabel):
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
-        self.datastore = datastore.DataStore()
+
+        # Read configuration settings
+        self.config = ConfigParser()
+        self.config.read("settings.ini")
+
+        # Create backend
+        backend_module = importlib.import_module("backend_%s" %
+                self.config.get('global', 'BACKEND'))
+        backend = backend_module.Backend(self.config)
+
+        # Create data store
+        self.datastore = datastore.DataStore(backend)
         self.datastore.statusUpdate.connect(
                 lambda s: self.statusBar().showMessage(s))
         self.ids = {} # map from id to widget displaying that id
@@ -322,7 +337,7 @@ class MainWindow(QMainWindow):
     def setServerPassword(self):
         form = PasswordDlg(self)
         if form.exec_():
-            settings.LOGIN_PASSWORD = form.result()
+            self.config.set('roster', 'LOGIN_PASSWORD', form.result())
             self.serverSyncAction.setEnabled(True)
 
     def sync(self):
