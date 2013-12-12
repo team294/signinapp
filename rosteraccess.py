@@ -1,5 +1,15 @@
-import http.cookiejar
-import urllib.parse, urllib.request
+# Python 2 and 3 compatibility
+from __future__ import print_function
+try:
+    import urllib.parse as urlparse
+except ImportError:
+    import urlparse
+try:
+    from urllib.request import (urlretrieve, HTTPCookieProcessor, build_opener,
+            Request)
+except ImportError:
+    from urllib import urlretrieve
+    from urllib2 import HTTPCookieProcessor, build_opener, Request
 import io
 import csv
 import settings
@@ -7,8 +17,8 @@ from models import *
 
 def login(loc = settings.BASE_LOCATION):
     login_url = settings.BASE_URL + settings.LOGIN_LOCATION
-    cookies = urllib.request.HTTPCookieProcessor()
-    opener = urllib.request.build_opener(cookies)
+    cookies = HTTPCookieProcessor()
+    opener = build_opener(cookies)
     opener.open(login_url)
 
     try:
@@ -20,9 +30,9 @@ def login(loc = settings.BASE_LOCATION):
             password=settings.LOGIN_PASSWORD,
             next=loc,
             csrfmiddlewaretoken=token)
-    encoded_params = urllib.parse.urlencode(params).encode('utf-8')
+    encoded_params = urlparse.urlencode(params).encode('utf-8')
 
-    req = urllib.request.Request(login_url, encoded_params)
+    req = Request(login_url, encoded_params)
     req.add_header('Referer', login_url)
     response = opener.open(req)
     if response.geturl() == login_url:
@@ -47,7 +57,7 @@ def getPersonList():
 
 def getBadgePhoto(photoPath, localName):
     print("downloading %s" % photoPath)
-    urllib.request.urlretrieve(settings.BASE_URL + photoPath, localName)
+    urlretrieve(settings.BASE_URL + photoPath, localName)
 
 def putTimeRecords(records):
     """Send list of time records to server.  Returns set of indices of
@@ -69,7 +79,7 @@ def putTimeRecords(records):
     url = settings.BASE_URL + settings.TIME_RECORD_BULK_ADD_LOCATION
     data = f.getvalue().encode('utf-8')
     clen = len(data)
-    req = urllib.request.Request(url, data,
+    req = Request(url, data,
             {'Content-Type': 'text/csv', 'Content-Length': clen})
     with opener.open(req) as response:
         if response.geturl() != url:

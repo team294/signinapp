@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 import pickle
 import rosteraccess
@@ -10,7 +11,7 @@ class DataStore(QObject):
     statsChanged = pyqtSignal()
 
     def __init__(self):
-        super().__init__()
+        super(DataStore, self).__init__()
         self.mutex = QMutex(QMutex.Recursive)
         self.people = {}
         self.timeLog = []

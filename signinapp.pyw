@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import datastore
@@ -10,7 +10,7 @@ class SynchronizeThread(QThread):
     finished = pyqtSignal()
 
     def __init__(self, datastore, parent=None):
-        super().__init__(parent)
+        super(SynchronizeThread, self).__init__(parent)
         self.datastore = datastore
 
     def run(self):
@@ -20,7 +20,7 @@ class SynchronizeThread(QThread):
 
 class PersonImage(QWidget):
     def __init__(self, parent=None):
-        super().__init__(parent)
+        super(PersonImage, self).__init__(parent)
         self.image = None
         self.pixmap = None
         self.record = None
@@ -81,7 +81,7 @@ class PersonImage(QWidget):
 
 class PersonLabel(QLabel):
     def __init__(self, parent=None):
-        super().__init__(parent)
+        super(PersonLabel, self).__init__(parent)
         self.record = None
 
     def set(self, record):
@@ -89,12 +89,12 @@ class PersonLabel(QLabel):
         self.setText(str(record.person))
 
     def clear(self):
-        super().clear()
+        super(PersonLabel, self).clear()
         self.record = None
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
-        super().__init__(parent)
+        super(MainWindow, self).__init__(parent)
         self.datastore = datastore.DataStore()
         self.datastore.statusUpdate.connect(
                 lambda s: self.statusBar().showMessage(s))

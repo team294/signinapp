@@ -1,3 +1,4 @@
+from __future__ import print_function
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
@@ -5,7 +6,7 @@ MAC = "qt_mac_set_native_menubar" in dir()
 
 class FindDlg(QDialog):
     def __init__(self, datastore, parent=None):
-        super().__init__(parent)
+        super(FindDlg, self).__init__(parent)
         self.datastore = datastore
 
         findLabel = QLabel("&Name:")

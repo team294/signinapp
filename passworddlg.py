@@ -3,7 +3,7 @@ from PyQt4.QtGui import *
 
 class PasswordDlg(QDialog):
     def __init__(self, parent=None):
-        super().__init__(parent)
+        super(PasswordDlg, self).__init__(parent)
 
         passwordLabel = QLabel("&Password:")
         self.passwordEdit = QLineEdit()

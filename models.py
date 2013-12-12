@@ -1,3 +1,4 @@
+from __future__ import print_function
 from datetime import datetime
 import os
 from PyQt4.QtCore import QObject, pyqtSignal
@@ -31,7 +32,7 @@ class Person(SuperQObject):
     updated = pyqtSignal()
 
     def __init__(self, id, name, student, photoPath, photoSize, badge):
-        super().__init__()
+        super(Person, self).__init__()
         self.id = id
         self.name = name
         self.student = student
@@ -78,7 +79,7 @@ class TimeRecord(SuperQObject):
     completed = pyqtSignal()
 
     def __init__(self, person):
-        super().__init__()
+        super(TimeRecord, self).__init__()
         self.person = person
         self.inTime = datetime.now()
         self.outTime = None
