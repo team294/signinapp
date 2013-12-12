@@ -1,7 +1,7 @@
 from __future__ import print_function
 import os
 import pickle
-import rosteraccess
+import backend_roster as backend
 import settings
 from PyQt4.QtCore import QObject, QMutex, QMutexLocker, pyqtSignal
 from models import *
@@ -118,9 +118,9 @@ class DataStore(QObject):
             self.statsChanged.emit()
 
     def sync(self):
-        # Update people from roster
+        # Update people from backend
         try:
-            newpeople = rosteraccess.getPersonList()
+            newpeople = backend.getPersonList()
             with QMutexLocker(self.mutex):
                 self.badgeToId = {}
                 for person in newpeople:
@@ -145,7 +145,7 @@ class DataStore(QObject):
             if person.photoRemote and size != person.photoSize:
                 self.statusUpdate.emit("Downloading %s" % person.photoRemote)
                 try:
-                    rosteraccess.getBadgePhoto(person.photoRemote, person.photo)
+                    backend.getBadgePhoto(person.photoRemote, person.photo)
                 except IOError as e:
                     self.statusUpdate.emit("Failed when downloading %s: %s" %
                             (person.photo, e))
@@ -156,7 +156,7 @@ class DataStore(QObject):
                 try:
                     self.statusUpdate.emit("Pushing %d time records" %
                             len(self.timeLog))
-                    ok = rosteraccess.putTimeRecords(self.timeLog)
+                    ok = backend.putTimeRecords(self.timeLog)
                 except IOError as e:
                     self.statsChanged.emit()
                     self.statusUpdate.emit("Failed to push time records: %s" % e)
