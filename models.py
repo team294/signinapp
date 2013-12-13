@@ -41,6 +41,9 @@ class Person(SuperQObject):
         self.photoSize = photoSize
         self.badge = badge
 
+    def __reduce__(self):
+        return (Person, (self.id, self.name, self.student, self.photoRemote, self.photoSize, self.badge))
+
     def updateFrom(self, other):
         assert(self.id == other.id)
         changed = (self.name != other.name or
@@ -86,6 +89,13 @@ class TimeRecord(SuperQObject):
         self.hours = 0.0
         self.recorded = None
         print("%s signed in" % self.person)
+
+    def __reduce__(self):
+        return (TimeRecord, (self.person,),
+                {'inTime': self.inTime,
+                    'outTime': self.outTime,
+                    'hours': self.hours,
+                    'recorded': self.recorded})
 
     def signOut(self):
         print("%s signing out" % self.person)
