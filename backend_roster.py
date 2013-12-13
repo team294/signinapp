@@ -72,7 +72,7 @@ class Backend:
         """Send list of time records to server.  Returns set of indices of
         accepted records."""
         if not records:
-            return # no records to put
+            return set() # no records to put
 
         # build csv file to send
         f = io.StringIO(newline='')
