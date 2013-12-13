@@ -2,3 +2,4 @@
 /photos/*.jpeg
 __pycache__
 *.pickle
+*.pyc
