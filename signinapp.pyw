@@ -245,6 +245,8 @@ class MainWindow(QMainWindow):
         self.datastore.load()
         for record in self.datastore.clockedIn.values():
             self.signin(record)
+        # try to do an initial synchronization on startup
+        self.sync()
 
     def badgeEntered(self):
         badgestr = self.badgeEdit.text()
