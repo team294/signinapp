@@ -23,8 +23,7 @@ class Backend:
                     photoSize = os.stat(photoPath).st_size
                 except OSError:
                     photoSize = 0
-                badge = int(row["Badge Number"])
-                people.append(Person(id, name, student, photoPath, photoSize, badge))
+                people.append(Person(id, name, student, photoPath, photoSize, id))
             return people
 
     def getBadgePhoto(self, photoPath, localName):

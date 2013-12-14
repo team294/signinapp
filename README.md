@@ -21,7 +21,6 @@ Edit people.csv to add your team members.  Column meanings:
 - Photo Path: Path to a jpg file shown as the user's picture.  The path can
   be either absolute or relative; photos will be copied to the photos/
   directory.
-- Badge Number: If not blank, overrides ID for sign-in purposes.
 
 "Synchronization" will result in writing to the records.csv file.  Columns are:
 - ID: person's ID
