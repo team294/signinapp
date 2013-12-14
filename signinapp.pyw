@@ -223,9 +223,9 @@ class MainWindow(QMainWindow):
 
         # Try to autosync once a day
         self.autoSyncTimer = QTimer(self)
-        self.autoSyncTimer.setInterval(24*60*60*1000)
+        self.autoSyncTimer.setInterval(self.config.getint('global', 'AUTO_SYNC_TIME')*1000)
         self.autoSyncTimer.timeout.connect(self.sync)
-        self.autoSyncAction.setChecked(True)
+        self.autoSyncAction.setChecked(self.config.getboolean('global', 'AUTO_SYNC_ENABLED'))
 
     def createAction(self, text, shortcut=None, icon=None, tip=None,
             checkable=False):
