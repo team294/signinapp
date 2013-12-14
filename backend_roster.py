@@ -21,6 +21,9 @@ class Backend:
     def get_setting(self, name):
         return self.config.get('roster', name)
 
+    def setPassword(self, password):
+        self.config.set('roster', 'LOGIN_PASSWORD', password)
+
     def login(self, loc=None):
         if loc is None:
             loc = self.get_setting('BASE_LOCATION')
@@ -111,9 +114,9 @@ if __name__ == "__main__":
     config = ConfigParser()
     config.read("settings.ini")
     import getpass
-    config.set('roster', 'LOGIN_PASSWORD', getpass.getpass("Password: "))
 
     backend = Backend(config)
+    backend.setPassword(getpass.getpass("Password: "))
     people = list(backend.getPersonList())
     for person in people:
         print(person.name)

@@ -107,10 +107,10 @@ class MainWindow(QMainWindow):
         # Create backend
         backend_module = importlib.import_module("backend_%s" %
                 self.config.get('global', 'BACKEND'))
-        backend = backend_module.Backend(self.config)
+        self.backend = backend_module.Backend(self.config)
 
         # Create data store
-        self.datastore = datastore.DataStore(backend)
+        self.datastore = datastore.DataStore(self.backend)
         self.datastore.statusUpdate.connect(
                 lambda s: self.statusBar().showMessage(s))
         self.ids = {} # map from id to widget displaying that id
@@ -200,7 +200,8 @@ class MainWindow(QMainWindow):
         actionMenu.addAction(usersClearAllAction)
 
         serverMenu = self.menuBar().addMenu("&Server")
-        serverMenu.addAction(self.serverPasswordAction)
+        if hasattr(self.backend, 'setPassword'):
+            serverMenu.addAction(self.serverPasswordAction)
         serverMenu.addAction(self.serverSyncAction)
         serverMenu.addAction(self.autoSyncAction)
 
@@ -337,7 +338,7 @@ class MainWindow(QMainWindow):
     def setServerPassword(self):
         form = PasswordDlg(self)
         if form.exec_():
-            self.config.set('roster', 'LOGIN_PASSWORD', form.result())
+            self.backend.setPassword(form.result())
             self.serverSyncAction.setEnabled(True)
 
     def sync(self):

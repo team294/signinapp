@@ -175,10 +175,10 @@ if __name__ == "__main__":
     config = ConfigParser()
     config.read("settings.ini")
     import getpass
-    config.set('roster', 'LOGIN_PASSWORD', getpass.getpass("Password: "))
 
     from backend_roster import Backend
     backend = Backend(config)
+    backend.setPassword(getpass.getpass("Password: "))
     store = DataStore(backend)
     store.statusUpdate.connect(print)
     store.load()
