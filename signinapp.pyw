@@ -269,6 +269,9 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("Invalid data entry '%s'" % badgestr)
             return
 
+        self.signInOut(badge)
+
+    def signInOut(self, badge):
         try:
             record = self.datastore.signInOut(badge)
         except KeyError:
@@ -320,6 +323,7 @@ class MainWindow(QMainWindow):
 
     def findUser(self):
         form = FindDlg(self.datastore, parent=self)
+        form.personInOut.connect(self.signInOut)
         form.exec_()
 
     def signOutAll(self):

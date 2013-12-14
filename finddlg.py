@@ -5,6 +5,8 @@ from PyQt4.QtGui import *
 MAC = "qt_mac_set_native_menubar" in dir()
 
 class FindDlg(QDialog):
+    personInOut = pyqtSignal([int])
+
     def __init__(self, datastore, parent=None):
         super(FindDlg, self).__init__(parent)
         self.datastore = datastore
@@ -34,6 +36,7 @@ class FindDlg(QDialog):
         findButton.clicked.connect(self.find)
         self.findLineEdit.returnPressed.connect(self.find)
         closeButton.clicked.connect(self.close)
+        self.results.cellDoubleClicked.connect(self.resultDoubleClicked)
 
         self.setWindowTitle("Find User")
 
@@ -54,6 +57,10 @@ class FindDlg(QDialog):
             item.setFlags(Qt.ItemIsSelectable|Qt.ItemIsEnabled)
             self.results.setItem(row, 1, item)
         self.results.sortItems(0)
+
+    def resultDoubleClicked(self, row, column):
+        item = self.results.item(row, 1)
+        self.personInOut.emit(int(item.text()))
 
 if __name__ == "__main__":
     import sys
