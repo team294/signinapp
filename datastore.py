@@ -164,6 +164,8 @@ class DataStore(QObject):
                     return
                 self.timeLog = [v for i, v in enumerate(self.timeLog) if i not in ok]
                 self.statusUpdate.emit("Pushed %d time records" % len(ok))
+            else:
+                self.statusUpdate.emit("Synchronization complete")
 
             self.statsChanged.emit()
 
