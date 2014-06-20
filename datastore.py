@@ -2,7 +2,6 @@ from __future__ import print_function
 import os
 import pickle
 import backend_roster as backend
-import settings
 from PyQt4.QtCore import QObject, QMutex, QMutexLocker, pyqtSignal
 from models import *
 
