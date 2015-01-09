@@ -10,17 +10,55 @@ import importlib
 from passworddlg import PasswordDlg
 from finddlg import FindDlg
 
-class SynchronizeThread(QThread):
+class Synchronizer(QObject):
     finished = pyqtSignal()
 
     def __init__(self, datastore, parent=None):
-        super(SynchronizeThread, self).__init__(parent)
+        super(Synchronizer, self).__init__(parent)
         self.datastore = datastore
 
-    def run(self):
+    @pyqtSlot()
+    def sync(self):
         self.datastore.sync()
         self.datastore.save()
         self.finished.emit()
+
+class ImageLoader(QObject):
+    loaded = pyqtSignal(str, QImage)
+
+    def __init__(self, parent=None):
+        super(ImageLoader, self).__init__(parent)
+        self.pending = {}
+
+    @pyqtSlot()
+    def doLoadImage(self):
+        if not self.pending:
+            return
+        filename, (width, height) = self.pending.popitem()
+        #print("loading %s" % filename)
+        image = QImage(filename)
+        if image.isNull():
+            return
+        image = image.scaled(width, height,
+                Qt.KeepAspectRatioByExpanding,
+                Qt.SmoothTransformation)
+        self.loaded.emit(filename, image)
+
+        if self.pending:
+            # keep loading images
+            QTimer.singleShot(0, self.doLoadImage)
+
+    @pyqtSlot(dict)
+    def load(self, toload):
+        if not self.pending:
+            QTimer.singleShot(0, self.doLoadImage)
+        self.pending = toload
+
+    @pyqtSlot(str, int, int)
+    def loadOne(self, filename, width, height):
+        if not self.pending:
+            QTimer.singleShot(0, self.doLoadImage)
+        self.pending[str(filename)] = (width, height)
 
 class PersonImage(QWidget):
     def __init__(self, parent=None):
@@ -36,16 +74,12 @@ class PersonImage(QWidget):
     def minimumSizeHint(self):
         return QSize(60, 100)
 
-    def updatePixmap(self):
-        if self.image is not None:
-            width = self.size().width()
-            height = self.size().height() - self.labelHeight
-            self.pixmap = QPixmap.fromImage(self.image.scaled(width, height,
-                    Qt.KeepAspectRatioByExpanding,
-                    Qt.SmoothTransformation))
+    def getPixmapSize(self):
+        width = self.size().width()
+        height = self.size().height() - self.labelHeight
+        return (width, height)
 
     def resizeEvent(self, event=None):
-        self.updatePixmap()
         self.label.move(0, self.size().height()-self.labelHeight)
         self.label.resize(self.size().width(), self.labelHeight)
 
@@ -67,11 +101,7 @@ class PersonImage(QWidget):
 
     def set(self, record):
         self.record = record
-        image = QImage(record.person.photo)
-        if image.isNull():
-            raise IOError
-        self.image = image
-        self.updatePixmap()
+        self.image = record.person.photo
         self.label.setText("%s (%d)" % (
             record.person.name.partition(' ')[0], record.person.badge))
         self.update()
@@ -116,8 +146,22 @@ class MainWindow(QMainWindow):
         self.ids = {} # map from id to widget displaying that id
 
         # Synchronizer thread
-        self.syncThread = SynchronizeThread(self.datastore, parent=self)
-        self.syncThread.finished.connect(self.syncDone)
+        self.synchronizerThread = QThread()
+        self.synchronizer = Synchronizer(self.datastore)
+        self.synchronizer.finished.connect(self.syncDone)
+        self.synchronizer.moveToThread(self.synchronizerThread)
+        self.synchronizerThread.start()
+
+        # Pixmap loader thread
+        self.imageWidget = {}
+        self.imageLoaderThread = QThread()
+        self.imageLoader = ImageLoader()
+        self.imageLoader.loaded.connect(self.pixmapLoaded)
+        self.imageLoader.moveToThread(self.imageLoaderThread)
+        self.imageLoaderThread.start()
+
+        self.resizeTimer = QTimer(self)
+        self.resizeTimer.timeout.connect(self.loadPixmaps)
 
         # Center widget
         center = QWidget()
@@ -304,10 +348,14 @@ class MainWindow(QMainWindow):
                     widget = w
                     break
             if widget is not None:
-                try:
-                    widget.set(record)
-                except IOError:
-                    widget = None # file didn't load, place in overflow
+                widget.set(record)
+                width, height = widget.getPixmapSize()
+                QMetaObject.invokeMethod(self.imageLoader, 'loadOne',
+                                         Qt.QueuedConnection,
+                                         Q_ARG(str, widget.image),
+                                         Q_ARG(int, width),
+                                         Q_ARG(int, height))
+                self.imageWidget[str(widget.image)] = widget
 
         # otherwise place in overflow
         if widget is None:
@@ -348,12 +396,10 @@ class MainWindow(QMainWindow):
             self.serverSyncAction.setEnabled(True)
 
     def sync(self):
-        if self.syncThread.isRunning():
-            return
         self.statusBar().showMessage("Synchronizing...")
         self.serverPasswordAction.setEnabled(False)
         self.serverSyncAction.setEnabled(False)
-        self.syncThread.start()
+        QMetaObject.invokeMethod(self.synchronizer, 'sync', Qt.QueuedConnection)
 
     def syncDone(self):
         self.serverPasswordAction.setEnabled(True)
@@ -383,6 +429,36 @@ class MainWindow(QMainWindow):
         if self.ids[id] is not None:
             self.ids[id].clear()
         del self.ids[id]
+
+    def resizeEvent(self, event=None):
+        super(MainWindow, self).resizeEvent(event)
+        for pi in self.studentpics:
+            pi.pixmap = None
+        for pi in self.adultpics:
+            pi.pixmap = None
+        self.resizeTimer.start(100)
+
+    def loadPixmaps(self):
+        self.resizeTimer.stop()
+        allpics = []
+        allpics.extend(self.studentpics)
+        allpics.extend(self.adultpics)
+
+        toload = {}
+        for pi in allpics:
+            if pi.image is None:
+                continue
+            toload[pi.image] = pi.getPixmapSize()
+            self.imageWidget[str(pi.image)] = pi
+
+        QMetaObject.invokeMethod(self.imageLoader, 'load', Qt.QueuedConnection,
+                                 Q_ARG(dict, toload))
+
+    @pyqtSlot(str, QImage)
+    def pixmapLoaded(self, filename, image):
+        widget = self.imageWidget[str(filename)]
+        widget.pixmap = QPixmap.fromImage(image)
+        widget.update()
 
     def closeEvent(self, event):
         self.datastore.save()
