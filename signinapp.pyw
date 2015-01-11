@@ -61,6 +61,8 @@ class ImageLoader(QObject):
         self.pending[str(filename)] = (width, height)
 
 class PersonImage(QWidget):
+    noImage = QImage("photos/NO-IMAGE-AVAILABLE.jpg")
+
     def __init__(self, parent=None):
         super(PersonImage, self).__init__(parent)
         self.image = None
@@ -78,6 +80,12 @@ class PersonImage(QWidget):
         width = self.size().width()
         height = self.size().height() - self.labelHeight
         return (width, height)
+
+    def getPlaceholderPixmap(self):
+        width, height = self.getPixmapSize()
+        return QPixmap.fromImage(self.noImage.scaled(width, height,
+                Qt.KeepAspectRatioByExpanding,
+                Qt.SmoothTransformation))
 
     def resizeEvent(self, event=None):
         self.label.move(0, self.size().height()-self.labelHeight)
@@ -102,6 +110,7 @@ class PersonImage(QWidget):
     def set(self, record):
         self.record = record
         self.image = record.person.photo
+        self.pixmap = self.getPlaceholderPixmap()
         self.label.setText("%s (%d)" % (
             record.person.name.partition(' ')[0], record.person.badge))
         self.update()
@@ -432,10 +441,13 @@ class MainWindow(QMainWindow):
 
     def resizeEvent(self, event=None):
         super(MainWindow, self).resizeEvent(event)
+        noPixmap = self.studentpics[0].getPlaceholderPixmap()
         for pi in self.studentpics:
-            pi.pixmap = None
+            if pi.image is not None:
+                pi.pixmap = noPixmap
         for pi in self.adultpics:
-            pi.pixmap = None
+            if pi.image is not None:
+                pi.pixmap = noPixmap
         self.resizeTimer.start(100)
 
     def loadPixmaps(self):
